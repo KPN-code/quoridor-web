@@ -72,4 +72,4 @@ class QuoridorState:
         else:
             self.v_walls[wr][wc] = True
 
-        self.walls[self.turn] -= 1
+        
