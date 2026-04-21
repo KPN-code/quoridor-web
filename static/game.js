@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 
 const CELL = 60;
 
+// ── API ───────────────────────────────────────
 async function getState() {
     const res = await fetch("/state");
     return await res.json();
@@ -12,7 +13,7 @@ async function aiMove() {
     await fetch("/ai");
 }
 
-// ── PIIRTO ─────────────────────────────────────
+// ── PIIRTO ────────────────────────────────────
 function draw(state) {
     ctx.clearRect(0,0,600,600);
 
@@ -24,7 +25,7 @@ function draw(state) {
         }
     }
 
-    // seinät (yksinkertainen visualisointi)
+    // seinät
     ctx.fillStyle = "orange";
     for (let r=0;r<8;r++){
         for (let c=0;c<8;c++){
@@ -46,7 +47,7 @@ function draw(state) {
     });
 }
 
-// ── KLIKKAUS ──────────────────────────────────
+// ── VASEN KLIKKAUS = LIIKE ───────────────────
 canvas.addEventListener("click", async (e) => {
     const x = Math.floor(e.offsetX / CELL);
     const y = Math.floor(e.offsetY / CELL);
@@ -71,19 +72,42 @@ canvas.addEventListener("click", async (e) => {
     draw(await getState());
 });
 
-// ── OIKEA KLIKKAUS = SEINÄ ─────────────────────
+// ── OIKEA KLIKKAUS = SEINÄ ───────────────────
 canvas.addEventListener("contextmenu", async (e) => {
     e.preventDefault();
 
-    const wc = Math.floor(e.offsetX / CELL);
-    const wr = Math.floor(e.offsetY / CELL);
+    const x = e.offsetX;
+    const y = e.offsetY;
+
+    const cellX = Math.floor(x / CELL);
+    const cellY = Math.floor(y / CELL);
+
+    const offsetX = x % CELL;
+    const offsetY = y % CELL;
+
+    // päätellään suunta sen mukaan kumman reunan lähellä klikattiin
+    let horiz;
+    if (offsetY > offsetX) {
+        horiz = true;   // vaakaseinä
+    } else {
+        horiz = false;  // pystyseinä
+    }
+
+    const wc = cellX;
+    const wr = cellY;
+
+    // estä laudan reunat
+    if (wc >= 8 || wr >= 8) {
+        console.log("Reuna – ei voi asettaa seinää");
+        return;
+    }
 
     const res = await fetch("/move", {
         method:"POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
             type:"wall",
-            horiz: true, // voit vaihtaa myöhemmin
+            horiz: horiz,
             wc: wc,
             wr: wr
         })
@@ -99,7 +123,7 @@ canvas.addEventListener("contextmenu", async (e) => {
     draw(await getState());
 });
 
-// ── LOOP ──────────────────────────────────────
+// ── LOOP ─────────────────────────────────────
 async function loop() {
     draw(await getState());
 }
