@@ -3,14 +3,105 @@
 <head>
     <title>Quoridor Web</title>
     <style>
-        canvas { background:#222; margin:20px; }
+        body {
+            background:#111;
+            color:white;
+            font-family: Arial;
+        }
+
+        .container {
+            display:flex;
+            justify-content:center;
+            align-items:flex-start;
+            gap:30px;
+            margin-top:20px;
+        }
+
+        canvas {
+            background:#222;
+            border:2px solid #555;
+        }
+
+        .panel {
+            max-width:300px;
+            font-size:14px;
+            color:#ccc;
+        }
+
+        h1 {
+            text-align:center;
+        }
+
+        h2 {
+            color:#f59e0b;
+            margin-top:10px;
+        }
+
+        #status {
+            text-align:center;
+            margin-top:10px;
+            font-weight:bold;
+        }
     </style>
 </head>
 <body>
 
 <h1>Quoridor Web</h1>
-<canvas id="c" width="600" height="600"></canvas>
+
+<div id="status">Ladataan...</div>
+
+<div class="container">
+
+    <canvas id="c" width="600" height="600"></canvas>
+
+    <div class="panel">
+        <h2>Ohjeet</h2>
+        <p>
+        Vasen klikkaus = liiku<br>
+        Oikea klikkaus = aseta seinä
+        </p>
+
+        <h2>Säännöt</h2>
+        <p>
+        - 9x9 ruudukko<br>
+        - Sininen (P1) ylhäällä, punainen (AI) alhaalla<br>
+        - Tavoite: päästä vastakkaiselle laidalle<br>
+        - Vuorollaan liike TAI seinä<br>
+        - Molemmilla 10 seinää<br>
+        - Seinä ei saa blokata reittiä kokonaan<br>
+        - Voit hypätä vastustajan yli<br>
+        </p>
+
+        <h2>Tekoäly</h2>
+        <p>
+        - Minimax (syvyys 2)<br>
+        - BFS-etäisyys heuristiikka<br>
+        - Pyrkii lyhimpään reittiin<br>
+        - Hidastaa vastustajaa seinillä<br>
+        </p>
+    </div>
+
+</div>
 
 <script src="/static/game.js"></script>
+
+<script>
+async function updateStatus() {
+    const res = await fetch("/state");
+    const s = await res.json();
+
+    let text = "";
+    if (s.pos[0][1] === 8) text = "VOITIT 🎉";
+    else if (s.pos[1][1] === 0) text = "HÄVISIT 😢";
+    else text = s.turn === 0 ? "Sinun vuorosi" : "AI miettii...";
+
+    text += `<br>P1 seinät: ${s.walls[0]} | P2 seinät: ${s.walls[1]}`;
+
+    document.getElementById("status").innerHTML = text;
+}
+
+setInterval(updateStatus, 500);
+</script>
+
 </body>
 </html>
