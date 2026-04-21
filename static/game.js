@@ -3,6 +3,9 @@ const ctx = canvas.getContext("2d");
 
 const CELL = 60;
 
+// ── HOVER STATE ───────────────────────────────
+let hoverWall = null;
+
 // ── API ───────────────────────────────────────
 async function getState() {
     const res = await fetch("/state");
@@ -38,6 +41,22 @@ function draw(state) {
         }
     }
 
+    // ── HOVER PREVIEW ─────────────────────────
+    if (hoverWall) {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = "yellow";
+
+        const {horiz, wc, wr} = hoverWall;
+
+        if (horiz) {
+            ctx.fillRect(wc*CELL, wr*CELL+CELL-5, CELL*2, 10);
+        } else {
+            ctx.fillRect(wc*CELL+CELL-5, wr*CELL, 10, CELL*2);
+        }
+
+        ctx.globalAlpha = 1.0;
+    }
+
     // pelaajat
     state.pos.forEach((p,i) => {
         ctx.fillStyle = i === 0 ? "blue" : "red";
@@ -46,6 +65,36 @@ function draw(state) {
         ctx.fill();
     });
 }
+
+// ── MOUSE MOVE (HOVER) ───────────────────────
+canvas.addEventListener("mousemove", (e) => {
+    const x = e.offsetX;
+    const y = e.offsetY;
+
+    const cellX = Math.floor(x / CELL);
+    const cellY = Math.floor(y / CELL);
+
+    const offsetX = x % CELL;
+    const offsetY = y % CELL;
+
+    let horiz;
+    if (offsetY > offsetX) {
+        horiz = true;
+    } else {
+        horiz = false;
+    }
+
+    if (cellX >= 8 || cellY >= 8) {
+        hoverWall = null;
+        return;
+    }
+
+    hoverWall = {
+        horiz: horiz,
+        wc: cellX,
+        wr: cellY
+    };
+});
 
 // ── VASEN KLIKKAUS = LIIKE ───────────────────
 canvas.addEventListener("click", async (e) => {
@@ -85,18 +134,16 @@ canvas.addEventListener("contextmenu", async (e) => {
     const offsetX = x % CELL;
     const offsetY = y % CELL;
 
-    // päätellään suunta sen mukaan kumman reunan lähellä klikattiin
     let horiz;
     if (offsetY > offsetX) {
-        horiz = true;   // vaakaseinä
+        horiz = true;
     } else {
-        horiz = false;  // pystyseinä
+        horiz = false;
     }
 
     const wc = cellX;
     const wr = cellY;
 
-    // estä laudan reunat
     if (wc >= 8 || wr >= 8) {
         console.log("Reuna – ei voi asettaa seinää");
         return;
