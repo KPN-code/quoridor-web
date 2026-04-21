@@ -23,23 +23,53 @@ def get_state():
     })
 
 
+# ── Pelaajan siirto ─────────────────────────────────────────────
 @app.route("/move", methods=["POST"])
 def move():
     data = request.json
-    c, r = data["c"], data["r"]
 
     if state.turn != 0:
         return jsonify({"error": "not your turn"})
 
-    state.pos[0] = [c, r]
-    state.turn = 1
+    # nappulaliike
+    if data["type"] == "move":
+        c, r = data["c"], data["r"]
 
-    return jsonify({"ok": True})
+        if [c, r] not in state.legal_moves(0):
+            return jsonify({"error": "illegal move"})
+
+        state.pos[0] = [c, r]
+        state.turn = 1
+        return jsonify({"ok": True})
+
+    # seinä
+    elif data["type"] == "wall":
+        if state.walls[0] <= 0:
+            return jsonify({"error": "no walls left"})
+
+        horiz = data["horiz"]
+        wc = data["wc"]
+        wr = data["wr"]
+
+        if not state.place_wall(horiz, wc, wr):
+            return jsonify({"error": "illegal wall"})
+
+        state.turn = 1
+        return jsonify({"ok": True})
+
+    return jsonify({"error": "invalid request"})
 
 
+# ── AI ──────────────────────────────────────────────────────────
 @app.route("/ai")
 def ai_move():
+    if state.turn != 1:
+        return jsonify({"error": "not AI turn"})
+
     move = ai.choose(state)
+
+    if move is None:
+        return jsonify({"error": "ai failed"})
 
     if move[0] == "move":
         _, c, r = move
@@ -50,6 +80,14 @@ def ai_move():
 
     state.turn = 0
     return jsonify({"move": move})
+
+
+# ── Reset (debug helpottaa) ─────────────────────────────────────
+@app.route("/reset")
+def reset():
+    global state
+    state = QuoridorState()
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":
